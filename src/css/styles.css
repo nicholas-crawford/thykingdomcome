@@ -1,0 +1,12 @@
+.Logs {
+    display: flex;
+    flex-direction: column;
+}
+
+.Logs--Heading {
+    font-weight: bold;
+}
+
+.Logs--Log-Info {
+    font-style: italic;
+}
