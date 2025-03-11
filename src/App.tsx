@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import "./css/styles.css";
 
@@ -27,6 +27,28 @@ export default function App() {
     return notRandomNumbers[idx];
   };
 
+  const deleteUpdate = useCallback(
+    (id: string) => {
+      const filteredUpdates = updates.filter((update) => update.id !== id);
+      setUpdates(filteredUpdates);
+    },
+    [updates],
+  );
+
+  const handleUpdates = (message: string, id?: string) => {
+    if (id) {
+      deleteUpdate(id);
+    } else {
+      setUpdates([
+        ...updates,
+        {
+          id: uuidv4(),
+          message: message,
+        },
+      ]);
+    }
+  };
+
   const addWood = () => {
     setWood((previousWood) => {
       const woodAmount = 1;
@@ -39,22 +61,16 @@ export default function App() {
       const seedAmount = randomWithProbability();
       setSeeds((previousSeeds) => previousSeeds + seedAmount);
       const foodAmount = randomWithProbability();
-      if (foodAmount > 0 || seedAmount > 0) {
-        setUpdates([
-          ...updates,
-          {
-            id: uuidv4(),
-            message: `You have found ${foodAmount} food and ${seedAmount} seeds!`,
-          },
-        ]);
+      if (foodAmount > 0 && seedAmount > 0) {
+        handleUpdates(
+          `You have found ${foodAmount} food and ${seedAmount} seeds!`,
+        );
+      } else if (foodAmount > 0) {
+        handleUpdates(`You have found ${foodAmount} food`);
+      } else if (seedAmount > 0) {
+        handleUpdates(`You have found ${seedAmount} seed!`);
       } else {
-        setUpdates([
-          ...updates,
-          {
-            id: uuidv4(),
-            message: `You found nothing!`,
-          },
-        ]);
+        handleUpdates(`You found nothing!`);
       }
       return previousFood + foodAmount;
     });
@@ -92,11 +108,16 @@ export default function App() {
         return newSeconds;
       });
     }, 1000);
+
+    if (updates.length >= 10) {
+      deleteUpdate(updates[0].id);
+    }
+
     const cleanup = () => {
       clearInterval(intervalID);
     };
     return cleanup;
-  }, []);
+  }, [deleteUpdate, updates]);
 
   return (
     <div>
