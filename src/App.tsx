@@ -1,22 +1,86 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import "./css/styles.css";
+import mechanicsNames from "./consts/mechanicNames";
+
+interface Update {
+  id: string;
+  message: string;
+}
+
+interface Game {
+  wood: number;
+  houses: number;
+  housePricing: number;
+  people: number;
+  food: number;
+  seeds: number;
+  days: number;
+  updates: Update[];
+  season: string;
+  unlockedMechanics: string[];
+}
+
+const getAddFoodMessage = (foodAmount: number, seedAmount: number) => {
+  if (foodAmount > 0 && seedAmount > 0) {
+    return `You have found ${foodAmount} food and ${seedAmount} seeds!`;
+  } else if (foodAmount > 0) {
+    return `You have found ${foodAmount} food`;
+  } else if (seedAmount > 0) {
+    return `You have found ${seedAmount} seed!`;
+  } else {
+    return "You found nothing!";
+  }
+};
+
+const addUpdate = (message: string, previousUpdates: Update[]) => {
+  const newUpdate = { id: uuidv4(), message: message };
+  const newAllUpdates = [newUpdate, ...previousUpdates];
+  return newAllUpdates.slice(0, 10);
+};
+
+const addSeasonUpdate = (
+  oldSeason: string,
+  newSeason: string,
+  previousUpdates: Update[],
+) => {
+  if (oldSeason === newSeason) {
+    return previousUpdates;
+  }
+  const message = `It's now ${newSeason}`;
+  return addUpdate(message, previousUpdates);
+};
+
+const getSeason = (day: number) => {
+  const remainder = day % 360;
+  if (remainder < 90) {
+    return "Spring";
+  } else if (remainder < 180) {
+    return "Summer";
+  } else if (remainder < 270) {
+    return "Autumn";
+  } else {
+    return "Winter";
+  }
+};
 
 export default function App() {
-  interface Update {
-    id: string;
-    message: string;
-  }
+  const [game, setGame] = useState<Game>({
+    wood: 0,
+    houses: 0,
+    housePricing: 0,
+    people: 0,
+    food: 0,
+    seeds: 0,
+    days: 0,
+    updates: [],
+    season: "Spring",
+    unlockedMechanics: [],
+  });
 
-  const [wood, setWood] = useState(0);
-  const [houses, setHouses] = useState(0);
-  const [housePricing, setHousePricing] = useState(4);
-  const [people, setPeople] = useState(0);
-  const [food, setFood] = useState(0);
-  const [seeds, setSeeds] = useState(0);
-  const [seconds, setSeconds] = useState(0);
-  const [updates, setUpdates] = useState<Update[]>([]);
-
+  //Todo: Fix probability to change based on season
+  //Todo: Move probability to utility file
+  //Todo: Create probability arrays to swap in and out
   const randomWithProbability = () => {
     const notRandomNumbers = [
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -27,126 +91,136 @@ export default function App() {
     return notRandomNumbers[idx];
   };
 
-  const deleteUpdate = useCallback(
-    (id: string) => {
-      const filteredUpdates = updates.filter((update) => update.id !== id);
-      setUpdates(filteredUpdates);
-    },
-    [updates],
-  );
+  const addFood = () => {
+    setGame((previousGameState) => {
+      const seedAmount = randomWithProbability();
+      const newGameSeeds = previousGameState.seeds + seedAmount;
+      const foodAmount = randomWithProbability();
+      const newGameFood = previousGameState.food + foodAmount;
+      const newUpdateMessage = getAddFoodMessage(foodAmount, seedAmount);
+      const newUpdates = addUpdate(newUpdateMessage, previousGameState.updates);
 
-  const handleUpdates = (message: string, id?: string) => {
-    if (id) {
-      deleteUpdate(id);
-    } else {
-      setUpdates([
-        ...updates,
-        {
-          id: uuidv4(),
-          message: message,
-        },
-      ]);
-    }
+      if (
+        previousGameState.food >= 10 &&
+        !previousGameState.unlockedMechanics.includes(
+          mechanicsNames.woodUnlocked,
+        )
+      ) {
+        const newGameMechanics = [
+          ...previousGameState.unlockedMechanics,
+          mechanicsNames.woodUnlocked,
+        ];
+        return {
+          ...previousGameState,
+          unlockedMechanics: newGameMechanics,
+          food: newGameFood,
+          seeds: newGameSeeds,
+          updates: newUpdates,
+        };
+      }
+
+      return {
+        ...previousGameState,
+        food: newGameFood,
+        seeds: newGameSeeds,
+        updates: newUpdates,
+      };
+    });
   };
 
   const addWood = () => {
-    setWood((previousWood) => {
-      const woodAmount = 1;
-      return previousWood + woodAmount;
-    });
-  };
-
-  const addFood = () => {
-    setFood((previousFood) => {
-      const seedAmount = randomWithProbability();
-      setSeeds((previousSeeds) => previousSeeds + seedAmount);
-      const foodAmount = randomWithProbability();
-      if (foodAmount > 0 && seedAmount > 0) {
-        handleUpdates(
-          `You have found ${foodAmount} food and ${seedAmount} seeds!`,
+    setGame((previousGameState) => {
+      if (previousGameState.food < 10) {
+        const newUpdates = addUpdate(
+          `You don't have enough food to complete this action`,
+          previousGameState.updates,
         );
-      } else if (foodAmount > 0) {
-        handleUpdates(`You have found ${foodAmount} food`);
-      } else if (seedAmount > 0) {
-        handleUpdates(`You have found ${seedAmount} seed!`);
-      } else {
-        handleUpdates(`You found nothing!`);
+
+        return {
+          ...previousGameState,
+          updates: newUpdates,
+        };
       }
-      return previousFood + foodAmount;
+
+      const newGameWood = previousGameState.wood + 1;
+      const newGameFood = previousGameState.food - 10;
+      const newUpdates = addUpdate(
+        `You gathered 1 wood`,
+        previousGameState.updates,
+      );
+
+      return {
+        ...previousGameState,
+        wood: newGameWood,
+        food: newGameFood,
+        updates: newUpdates,
+      };
     });
   };
 
-  const constructHouse = () => {
-    setWood((prevWood) => {
-      if (prevWood < housePricing) {
-        return prevWood;
-      }
-      setHouses((prevHouses) => prevHouses + 1);
-      setHousePricing((previousPricing) => previousPricing + 4);
-      return prevWood - housePricing;
-    });
-  };
+  //Todo: Re-implement Houses/Population
+
+  // const constructHouse = () => {
+  //   setWood((prevWood) => {
+  //     if (prevWood < housePricing) {
+  //       return prevWood;
+  //     }
+  //     setHouses((prevHouses) => prevHouses + 1);
+  //     setHousePricing((previousPricing) => previousPricing + 4);
+  //     return prevWood - housePricing;
+  //   });
+  // };
 
   useEffect(() => {
     const intervalID = setInterval(() => {
-      console.log("tick");
-      setSeconds((prevSeconds) => {
-        const newSeconds = prevSeconds + 1;
-        if (newSeconds % 5 === 0) {
-          setHouses((prevHouses) => {
-            setPeople((previousPeople) => {
-              const emptyHouses = prevHouses * 2 > previousPeople;
-              if (emptyHouses) {
-                return previousPeople + 1;
-              }
-              return previousPeople;
-            });
-
-            return prevHouses;
-          });
-        }
-        return newSeconds;
+      console.log("Tick");
+      setGame((prevGameState) => {
+        const newSeconds = prevGameState.days + 1;
+        const newSeason = getSeason(newSeconds);
+        return {
+          ...prevGameState,
+          days: newSeconds,
+          season: newSeason,
+          updates: addSeasonUpdate(
+            prevGameState.season,
+            newSeason,
+            prevGameState.updates,
+          ),
+        };
       });
     }, 1000);
-
-    if (updates.length >= 10) {
-      deleteUpdate(updates[0].id);
-    }
-
-    const cleanup = () => {
-      clearInterval(intervalID);
-    };
-    return cleanup;
-  }, [deleteUpdate, updates]);
+    return () => clearInterval(intervalID);
+  }, []);
 
   return (
     <div>
-      <div>Timer: {seconds}</div>
-      {/*<div>*/}
-      {/*    Hello, here's Wood: {wood}*/}
-      {/*    <button onClick={addWood}>Get Wood</button>*/}
-      {/*</div>*/}
+      <div>Days: {game.days}</div>
+      <div>Season: {game.season}</div>
+      {game.unlockedMechanics.includes(mechanicsNames.woodUnlocked) && (
+        <div>
+          Wood: {game.wood}
+          <button onClick={addWood}>Gather Wood (-10 Food)</button>
+        </div>
+      )}
       <div>
-        Food: {food}
+        Food: {game.food}
         <button onClick={addFood}>Forage</button>
       </div>
       {/*<div>*/}
       {/*    Hello, here's Population: {people}*/}
       {/*</div>*/}
-      {seeds > 0 ? <div>Seeds: {seeds}</div> : ""}
+      {game.seeds > 0 ? <div>Seeds: {game.seeds}</div> : ""}
       {/*<div>*/}
       {/*    Hello, here's Houses: {houses}*/}
       {/*    <button onClick={constructHouse}>Construct House ({housePricing})</button>*/}
       {/*</div>*/}
       <div className="Logs">
         <span className="Logs--Heading">Logs</span>
-        {updates
-          ? updates.map((update) => (
-              <span key={update.id} className="Logs--Log-Info">
-                {update.message}
-              </span>
-            ))
-          : ""}
+        {game.updates.map((update) => (
+          <span key={update.id} className="Logs--Log-Info">
+            {update.message}
+          </span>
+        ))}
       </div>
     </div>
   );
