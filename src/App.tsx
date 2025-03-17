@@ -8,6 +8,10 @@ interface Update {
   message: string;
 }
 
+interface Probabilities {
+  [key: string]: number;
+}
+
 interface Game {
   wood: number;
   houses: number;
@@ -64,11 +68,33 @@ const getSeason = (day: number) => {
   }
 };
 
+const getProbability = (season: string) => {
+  if (season === "Spring") {
+    return {
+      1: 0.5,
+      2: 0.45,
+      0: 0.05,
+    };
+  }
+  if (season === "Winter") {
+    return {
+      1: 0.09,
+      2: 0.01,
+      0: 0.9,
+    };
+  }
+  return {
+    1: 0.7,
+    2: 0.1,
+    0: 0.2,
+  };
+};
+
 export default function App() {
   const [game, setGame] = useState<Game>({
     wood: 0,
     houses: 0,
-    housePricing: 0,
+    housePricing: 10,
     people: 0,
     food: 0,
     seeds: 0,
@@ -78,24 +104,32 @@ export default function App() {
     unlockedMechanics: [],
   });
 
-  //Todo: Fix probability to change based on season
   //Todo: Move probability to utility file
-  //Todo: Create probability arrays to swap in and out
-  const randomWithProbability = () => {
-    const notRandomNumbers = [
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,
-      1, 2,
-    ];
-    const idx = Math.floor(Math.random() * notRandomNumbers.length);
-    return notRandomNumbers[idx];
-  };
+  //Todo: Create probability objects to swap in and out
+  function randomWithProbability(probabilities: Probabilities) {
+    const random = Math.random();
+
+    let cumulativeProb = 0;
+
+    for (const [value, probability] of Object.entries(probabilities)) {
+      cumulativeProb += probability;
+
+      if (random <= cumulativeProb) {
+        return parseFloat(value);
+      }
+    }
+
+    return parseFloat(
+      Object.keys(probabilities)[Object.keys(probabilities).length - 1],
+    );
+  }
 
   const addFood = () => {
     setGame((previousGameState) => {
-      const seedAmount = randomWithProbability();
+      const probs = getProbability(previousGameState.season);
+      const seedAmount = randomWithProbability(probs);
       const newGameSeeds = previousGameState.seeds + seedAmount;
-      const foodAmount = randomWithProbability();
+      const foodAmount = randomWithProbability(probs);
       const newGameFood = previousGameState.food + foodAmount;
       const newUpdateMessage = getAddFoodMessage(foodAmount, seedAmount);
       const newUpdates = addUpdate(newUpdateMessage, previousGameState.updates);
@@ -158,18 +192,25 @@ export default function App() {
     });
   };
 
-  //Todo: Re-implement Houses/Population
+  //Todo: Re-implement Population
 
-  // const constructHouse = () => {
-  //   setWood((prevWood) => {
-  //     if (prevWood < housePricing) {
-  //       return prevWood;
-  //     }
-  //     setHouses((prevHouses) => prevHouses + 1);
-  //     setHousePricing((previousPricing) => previousPricing + 4);
-  //     return prevWood - housePricing;
-  //   });
-  // };
+  const constructHouse = () => {
+    setGame((prevGameState) => {
+      if (prevGameState.wood < prevGameState.housePricing) {
+        const newUpdates = addUpdate(
+          "You require more wood to build a house",
+          prevGameState.updates,
+        );
+        return { ...prevGameState, updates: newUpdates };
+      }
+      return {
+        ...prevGameState,
+        wood: prevGameState.wood - prevGameState.housePricing,
+        housePricing: prevGameState.housePricing + 4,
+        houses: prevGameState.houses + 1,
+      };
+    });
+  };
 
   useEffect(() => {
     const intervalID = setInterval(() => {
@@ -188,7 +229,7 @@ export default function App() {
           ),
         };
       });
-    }, 1000);
+    }, 2000);
     return () => clearInterval(intervalID);
   }, []);
 
@@ -196,24 +237,27 @@ export default function App() {
     <div>
       <div>Days: {game.days}</div>
       <div>Season: {game.season}</div>
+      <div>
+        Food: {game.food}
+        <button onClick={addFood}>Forage</button>
+      </div>
+      {game.seeds > 0 ? <div>Seeds: {game.seeds}</div> : ""}
       {game.unlockedMechanics.includes(mechanicsNames.woodUnlocked) && (
         <div>
           Wood: {game.wood}
           <button onClick={addWood}>Gather Wood (-10 Food)</button>
         </div>
       )}
-      <div>
-        Food: {game.food}
-        <button onClick={addFood}>Forage</button>
-      </div>
+
       {/*<div>*/}
       {/*    Hello, here's Population: {people}*/}
       {/*</div>*/}
-      {game.seeds > 0 ? <div>Seeds: {game.seeds}</div> : ""}
-      {/*<div>*/}
-      {/*    Hello, here's Houses: {houses}*/}
-      {/*    <button onClick={constructHouse}>Construct House ({housePricing})</button>*/}
-      {/*</div>*/}
+      <div>
+        Houses: {game.houses}
+        <button onClick={constructHouse}>
+          Construct House (-{game.housePricing} Wood)
+        </button>
+      </div>
       <div className="Logs">
         <span className="Logs--Heading">Logs</span>
         {game.updates.map((update) => (
