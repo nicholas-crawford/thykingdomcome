@@ -212,21 +212,39 @@ export default function App() {
     });
   };
 
+  const populationEatsFood = (currentFood: number, populationCount: number) => {
+    return currentFood + populationCount * -2;
+  };
+
   useEffect(() => {
     const intervalID = setInterval(() => {
-      console.log("Tick");
       setGame((prevGameState) => {
         const newSeconds = prevGameState.days + 1;
         const newSeason = getSeason(newSeconds);
+        const newSeasonUpdate = addSeasonUpdate(
+          prevGameState.season,
+          newSeason,
+          prevGameState.updates,
+        );
+        const shouldIncreasePopulation =
+          prevGameState.houses * 2 > prevGameState.people;
+
+        const newPopulation = shouldIncreasePopulation
+          ? prevGameState.people + 1
+          : prevGameState.people;
+
+        const newFood = populationEatsFood(
+          prevGameState.food,
+          prevGameState.people,
+        );
+
         return {
           ...prevGameState,
           days: newSeconds,
           season: newSeason,
-          updates: addSeasonUpdate(
-            prevGameState.season,
-            newSeason,
-            prevGameState.updates,
-          ),
+          updates: newSeasonUpdate,
+          people: newPopulation,
+          food: newFood,
         };
       });
     }, 2000);
@@ -237,6 +255,7 @@ export default function App() {
     <div>
       <div>Days: {game.days}</div>
       <div>Season: {game.season}</div>
+      <div>Population: {game.people}</div>
       <div>
         Food: {game.food}
         <button onClick={addFood}>Forage</button>
@@ -248,10 +267,6 @@ export default function App() {
           <button onClick={addWood}>Gather Wood (-10 Food)</button>
         </div>
       )}
-
-      {/*<div>*/}
-      {/*    Hello, here's Population: {people}*/}
-      {/*</div>*/}
       <div>
         Houses: {game.houses}
         <button onClick={constructHouse}>
