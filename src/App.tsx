@@ -192,8 +192,6 @@ export default function App() {
     });
   };
 
-  //Todo: Re-implement Population
-
   const constructHouse = () => {
     setGame((prevGameState) => {
       if (prevGameState.wood < prevGameState.housePricing) {
