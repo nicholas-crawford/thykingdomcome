@@ -224,17 +224,25 @@ export default function App() {
           newSeason,
           prevGameState.updates,
         );
-        const shouldIncreasePopulation =
-          prevGameState.houses * 2 > prevGameState.people;
 
-        const newPopulation = shouldIncreasePopulation
-          ? prevGameState.people + 1
-          : prevGameState.people;
-
-        const newFood = populationEatsFood(
+        let newFood = populationEatsFood(
           prevGameState.food,
           prevGameState.people,
         );
+
+        let newPopulation;
+
+        if (newFood <= 0 && prevGameState.people > 0) {
+          newFood = 0;
+          newPopulation = prevGameState.people - 1;
+        } else {
+          const shouldIncreasePopulation =
+            prevGameState.houses * 2 > prevGameState.people;
+
+          newPopulation = shouldIncreasePopulation
+            ? prevGameState.people + 1
+            : prevGameState.people;
+        }
 
         return {
           ...prevGameState,
