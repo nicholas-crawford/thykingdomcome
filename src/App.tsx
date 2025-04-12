@@ -12,17 +12,26 @@ interface Probabilities {
   [key: string]: number;
 }
 
+interface Jobs {
+  farmers: number;
+  lumberjacks: number;
+  soldiers: number;
+}
+
 interface Game {
   wood: number;
   houses: number;
   housePricing: number;
   people: number;
   food: number;
+  farms: number;
+  farmPricing: number;
   seeds: number;
   days: number;
   updates: Update[];
   season: string;
   unlockedMechanics: string[];
+  jobs: Jobs;
 }
 
 const getAddFoodMessage = (foodAmount: number, seedAmount: number) => {
@@ -37,22 +46,23 @@ const getAddFoodMessage = (foodAmount: number, seedAmount: number) => {
   }
 };
 
-const addUpdate = (message: string, previousUpdates: Update[]) => {
+const addUpdate = (message: string, previousGameState: Game) => {
   const newUpdate = { id: uuidv4(), message: message };
-  const newAllUpdates = [newUpdate, ...previousUpdates];
-  return newAllUpdates.slice(0, 10);
+  const newAllUpdates = [newUpdate, ...previousGameState.updates];
+  const slicedUpdates = newAllUpdates.slice(0, 10);
+  return { ...previousGameState, updates: slicedUpdates };
 };
 
 const addSeasonUpdate = (
   oldSeason: string,
   newSeason: string,
-  previousUpdates: Update[],
+  previousGameState: Game,
 ) => {
   if (oldSeason === newSeason) {
-    return previousUpdates;
+    return previousGameState;
   }
   const message = `It's now ${newSeason}`;
-  return addUpdate(message, previousUpdates);
+  return addUpdate(message, previousGameState);
 };
 
 const getSeason = (day: number) => {
@@ -97,12 +107,66 @@ export default function App() {
     housePricing: 10,
     people: 0,
     food: 0,
+    farms: 0,
+    farmPricing: 0,
     seeds: 0,
     days: 0,
     updates: [],
     season: "Spring",
     unlockedMechanics: [],
+    jobs: {
+      farmers: 0,
+      lumberjacks: 0,
+      soldiers: 0,
+    },
   });
+
+  const assignJobs = (title: keyof Jobs, amount: number) => {
+    setGame((previousGameState) => {
+      const totalJobs =
+        previousGameState.jobs.farmers + previousGameState.jobs.lumberjacks;
+
+      if (amount > 0 && totalJobs >= previousGameState.people) {
+        return addUpdate(
+          `You require more people to add a ${title}`,
+          previousGameState,
+        );
+      }
+      if (title === "farmers") {
+        const newFarmerCount = previousGameState.jobs.farmers + amount;
+        if (previousGameState.farms < newFarmerCount) {
+          return addUpdate(
+            "You require more farms to add a farmer",
+            previousGameState,
+          );
+        }
+
+        if (newFarmerCount < 0) {
+          return addUpdate(
+            "There are no farmers left to unassign",
+            previousGameState,
+          );
+        }
+        return {
+          ...previousGameState,
+          jobs: { ...previousGameState.jobs, farmers: newFarmerCount },
+        };
+      }
+
+      if (title === "lumberjacks") {
+        const newLumberjackCount = previousGameState.jobs.lumberjacks + amount;
+        if (newLumberjackCount < 0) return previousGameState;
+        return {
+          ...previousGameState,
+          jobs: { ...previousGameState.jobs, lumberjacks: newLumberjackCount },
+        };
+      }
+      if (title === "soldiers") {
+        return previousGameState;
+      }
+      return previousGameState;
+    });
+  };
 
   //Todo: Move probability to utility file
   //Todo: Create probability objects to swap in and out
@@ -132,32 +196,28 @@ export default function App() {
       const foodAmount = randomWithProbability(probs);
       const newGameFood = previousGameState.food + foodAmount;
       const newUpdateMessage = getAddFoodMessage(foodAmount, seedAmount);
-      const newUpdates = addUpdate(newUpdateMessage, previousGameState.updates);
+      const newGameState = addUpdate(newUpdateMessage, previousGameState);
 
       if (
-        previousGameState.food >= 10 &&
-        !previousGameState.unlockedMechanics.includes(
-          mechanicsNames.woodUnlocked,
-        )
+        newGameState.food >= 10 &&
+        !newGameState.unlockedMechanics.includes(mechanicsNames.woodUnlocked)
       ) {
         const newGameMechanics = [
-          ...previousGameState.unlockedMechanics,
+          ...newGameState.unlockedMechanics,
           mechanicsNames.woodUnlocked,
         ];
         return {
-          ...previousGameState,
+          ...newGameState,
           unlockedMechanics: newGameMechanics,
           food: newGameFood,
           seeds: newGameSeeds,
-          updates: newUpdates,
         };
       }
 
       return {
-        ...previousGameState,
+        ...newGameState,
         food: newGameFood,
         seeds: newGameSeeds,
-        updates: newUpdates,
       };
     });
   };
@@ -165,29 +225,20 @@ export default function App() {
   const addWood = () => {
     setGame((previousGameState) => {
       if (previousGameState.food < 10) {
-        const newUpdates = addUpdate(
+        return addUpdate(
           `You don't have enough food to complete this action`,
-          previousGameState.updates,
+          previousGameState,
         );
-
-        return {
-          ...previousGameState,
-          updates: newUpdates,
-        };
       }
 
       const newGameWood = previousGameState.wood + 1;
       const newGameFood = previousGameState.food - 10;
-      const newUpdates = addUpdate(
-        `You gathered 1 wood`,
-        previousGameState.updates,
-      );
+      const gameState = addUpdate(`You gathered 1 wood`, previousGameState);
 
       return {
-        ...previousGameState,
+        ...gameState,
         wood: newGameWood,
         food: newGameFood,
-        updates: newUpdates,
       };
     });
   };
@@ -195,17 +246,33 @@ export default function App() {
   const constructHouse = () => {
     setGame((prevGameState) => {
       if (prevGameState.wood < prevGameState.housePricing) {
-        const newUpdates = addUpdate(
+        return addUpdate(
           "You require more wood to build a house",
-          prevGameState.updates,
+          prevGameState,
         );
-        return { ...prevGameState, updates: newUpdates };
       }
       return {
         ...prevGameState,
         wood: prevGameState.wood - prevGameState.housePricing,
         housePricing: prevGameState.housePricing + 4,
         houses: prevGameState.houses + 1,
+      };
+    });
+  };
+
+  const constructFarm = () => {
+    setGame((prevGameState) => {
+      if (prevGameState.wood < prevGameState.farmPricing) {
+        return addUpdate(
+          "You require more wood to build a farm",
+          prevGameState,
+        );
+      }
+      return {
+        ...prevGameState,
+        wood: prevGameState.wood - prevGameState.farmPricing,
+        // housePricing: prevGameState.housePricing + 4,
+        farms: prevGameState.farms + 1,
       };
     });
   };
@@ -219,38 +286,51 @@ export default function App() {
       setGame((prevGameState) => {
         const newSeconds = prevGameState.days + 1;
         const newSeason = getSeason(newSeconds);
-        const newSeasonUpdate = addSeasonUpdate(
+        const seasonGameState = addSeasonUpdate(
           prevGameState.season,
           newSeason,
-          prevGameState.updates,
+          prevGameState,
         );
 
         let newFood = populationEatsFood(
-          prevGameState.food,
-          prevGameState.people,
+          seasonGameState.food,
+          seasonGameState.people,
         );
 
-        let newPopulation;
+        const assignedFarms = Math.min(
+          seasonGameState.jobs.farmers,
+          seasonGameState.farms,
+        );
 
-        if (newFood <= 0 && prevGameState.people > 0) {
+        newFood = newFood + assignedFarms * 4;
+
+        let newPopulation;
+        const newJobs = seasonGameState.jobs;
+
+        if (newFood <= 0 && seasonGameState.people > 0) {
           newFood = 0;
-          newPopulation = prevGameState.people - 1;
+          newPopulation = seasonGameState.people - 1;
+          if (seasonGameState.jobs.farmers > 0) {
+            newJobs.farmers = newJobs.farmers - 1;
+          } else if (seasonGameState.jobs.lumberjacks > 0) {
+            newJobs.farmers = newJobs.lumberjacks - 1;
+          }
         } else {
           const shouldIncreasePopulation =
-            prevGameState.houses * 2 > prevGameState.people;
+            seasonGameState.houses * 2 > seasonGameState.people;
 
           newPopulation = shouldIncreasePopulation
-            ? prevGameState.people + 1
-            : prevGameState.people;
+            ? seasonGameState.people + 1
+            : seasonGameState.people;
         }
 
         return {
-          ...prevGameState,
+          ...seasonGameState,
           days: newSeconds,
           season: newSeason,
-          updates: newSeasonUpdate,
           people: newPopulation,
           food: newFood,
+          jobs: newJobs,
         };
       });
     }, 2000);
@@ -278,6 +358,23 @@ export default function App() {
         <button onClick={constructHouse}>
           Construct House (-{game.housePricing} Wood)
         </button>
+      </div>
+      <div>
+        Farms: {game.farms}
+        <button onClick={constructFarm}>
+          Construct Farm (-{game.farmPricing} Wood)
+        </button>
+      </div>
+      <div>
+        Assign Jobs:
+        <div>
+          <span>Farmers: {game.jobs.farmers}</span>
+          <button onClick={() => assignJobs("farmers", -1)}>-1</button>
+          <button onClick={() => assignJobs("farmers", 1)}>+1</button>
+          {/*<span>Lumberjacks: {game.jobs.lumberjacks}</span>*/}
+          {/*<button onClick={() => assignJobs("lumberjacks", -1)}>-1</button>*/}
+          {/*<button onClick={() => assignJobs("lumberjacks", 1)}>+1</button>*/}
+        </div>
       </div>
       <div className="Logs">
         <span className="Logs--Heading">Logs</span>
