@@ -26,7 +26,7 @@ interface Game {
   food: number;
   farms: number;
   farmPricing: number;
-  seeds: number;
+  // seeds: number;
   days: number;
   updates: Update[];
   season: string;
@@ -94,11 +94,21 @@ const getProbability = (season: string) => {
     };
   }
   return {
-    1: 0.7,
+    1: 0.4,
     2: 0.1,
-    0: 0.2,
+    0: 0.5,
   };
 };
+
+const getFarmCropAmount = (season: string) : number => {
+  if (season === "Spring") {
+    return 2
+  }
+  if (season === "Winter") {
+    return 0.25
+  }
+  return 1
+}
 
 export default function App() {
   const [game, setGame] = useState<Game>({
@@ -108,8 +118,8 @@ export default function App() {
     people: 0,
     food: 0,
     farms: 0,
-    farmPricing: 0,
-    seeds: 0,
+    farmPricing: 10,
+    // seeds: 0,
     days: 0,
     updates: [],
     season: "Spring",
@@ -191,11 +201,11 @@ export default function App() {
   const addFood = () => {
     setGame((previousGameState) => {
       const probs = getProbability(previousGameState.season);
-      const seedAmount = randomWithProbability(probs);
-      const newGameSeeds = previousGameState.seeds + seedAmount;
+      // const seedAmount = randomWithProbability(probs);
+      // const newGameSeeds = previousGameState.seeds + seedAmount;
       const foodAmount = randomWithProbability(probs);
       const newGameFood = previousGameState.food + foodAmount;
-      const newUpdateMessage = getAddFoodMessage(foodAmount, seedAmount);
+      const newUpdateMessage = getAddFoodMessage(foodAmount, 0);
       const newGameState = addUpdate(newUpdateMessage, previousGameState);
 
       if (
@@ -210,14 +220,14 @@ export default function App() {
           ...newGameState,
           unlockedMechanics: newGameMechanics,
           food: newGameFood,
-          seeds: newGameSeeds,
+          // seeds: newGameSeeds,
         };
       }
 
       return {
         ...newGameState,
         food: newGameFood,
-        seeds: newGameSeeds,
+        // seeds: newGameSeeds,
       };
     });
   };
@@ -271,7 +281,7 @@ export default function App() {
       return {
         ...prevGameState,
         wood: prevGameState.wood - prevGameState.farmPricing,
-        // housePricing: prevGameState.housePricing + 4,
+        farmPricing: prevGameState.farmPricing + 4,
         farms: prevGameState.farms + 1,
       };
     });
@@ -286,6 +296,7 @@ export default function App() {
       setGame((prevGameState) => {
         const newSeconds = prevGameState.days + 1;
         const newSeason = getSeason(newSeconds);
+        let newUpdates = prevGameState;
         const seasonGameState = addSeasonUpdate(
           prevGameState.season,
           newSeason,
@@ -297,19 +308,16 @@ export default function App() {
           seasonGameState.people,
         );
 
-        const assignedFarms = Math.min(
-          seasonGameState.jobs.farmers,
-          seasonGameState.farms,
-        );
+        const assignedFarms = seasonGameState.farms;
 
-        newFood = newFood + assignedFarms * 4;
-
+        newFood = Math.round(newFood + assignedFarms * (Math.max(seasonGameState.jobs.farmers + 1, 1) * getFarmCropAmount(newSeason)));
         let newPopulation;
         const newJobs = seasonGameState.jobs;
 
         if (newFood <= 0 && seasonGameState.people > 0) {
           newFood = 0;
           newPopulation = seasonGameState.people - 1;
+          newUpdates = addUpdate("Someone starved because you ran out of food! Build more farms!", prevGameState)
           if (seasonGameState.jobs.farmers > 0) {
             newJobs.farmers = newJobs.farmers - 1;
           } else if (seasonGameState.jobs.lumberjacks > 0) {
@@ -331,6 +339,7 @@ export default function App() {
           people: newPopulation,
           food: newFood,
           jobs: newJobs,
+          updates: newUpdates.updates
         };
       });
     }, 2000);
@@ -346,7 +355,7 @@ export default function App() {
         Food: {game.food}
         <button onClick={addFood}>Forage</button>
       </div>
-      {game.seeds > 0 ? <div>Seeds: {game.seeds}</div> : ""}
+      {/*{game.seeds > 0 ? <div>Seeds: {game.seeds}</div> : ""}*/}
       {game.unlockedMechanics.includes(mechanicsNames.woodUnlocked) && (
         <div>
           Wood: {game.wood}
