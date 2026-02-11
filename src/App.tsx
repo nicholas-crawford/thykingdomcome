@@ -16,6 +16,7 @@ interface Jobs {
   farmers: number;
   lumberjacks: number;
   soldiers: number;
+  scholars: number;
 }
 
 interface Game {
@@ -33,6 +34,24 @@ interface Game {
   unlockedMechanics: string[];
   jobs: Jobs;
 }
+
+type JobRule = {
+  canAssign?: (state: Game, newCount: number) => string | null;
+};
+
+const jobRules: Record<keyof Jobs, JobRule> = {
+  farmers: {
+    canAssign: (state, newCount) => {
+      if (state.farms < newCount) {
+        return "You require more farms to add a farmer";
+      }
+      return null;
+    },
+  },
+  lumberjacks: {},
+  soldiers: {},
+  scholars: {},
+};
 
 const getAddFoodMessage = (foodAmount: number, seedAmount: number) => {
   if (foodAmount > 0 && seedAmount > 0) {
@@ -100,15 +119,15 @@ const getProbability = (season: string) => {
   };
 };
 
-const getFarmCropAmount = (season: string) : number => {
+const getFarmCropAmount = (season: string): number => {
   if (season === "Spring") {
-    return 2
+    return 2;
   }
   if (season === "Winter") {
-    return 0.25
+    return 0.25;
   }
-  return 1
-}
+  return 1;
+};
 
 export default function App() {
   const [game, setGame] = useState<Game>({
@@ -128,13 +147,18 @@ export default function App() {
       farmers: 0,
       lumberjacks: 0,
       soldiers: 0,
+      scholars: 0,
     },
   });
 
+  const getTotalJobs = (jobs: Jobs) =>
+    jobs.farmers + jobs.lumberjacks + jobs.soldiers + jobs.scholars;
+
   const assignJobs = (title: keyof Jobs, amount: number) => {
     setGame((previousGameState) => {
-      const totalJobs =
-        previousGameState.jobs.farmers + previousGameState.jobs.lumberjacks;
+      const totalJobs = getTotalJobs(previousGameState.jobs);
+      const currentCount = previousGameState.jobs[title];
+      const newCount = currentCount + amount;
 
       if (amount > 0 && totalJobs >= previousGameState.people) {
         return addUpdate(
@@ -142,39 +166,27 @@ export default function App() {
           previousGameState,
         );
       }
-      if (title === "farmers") {
-        const newFarmerCount = previousGameState.jobs.farmers + amount;
-        if (previousGameState.farms < newFarmerCount) {
-          return addUpdate(
-            "You require more farms to add a farmer",
-            previousGameState,
-          );
-        }
 
-        if (newFarmerCount < 0) {
-          return addUpdate(
-            "There are no farmers left to unassign",
-            previousGameState,
-          );
-        }
-        return {
-          ...previousGameState,
-          jobs: { ...previousGameState.jobs, farmers: newFarmerCount },
-        };
+      if (newCount < 0) {
+        return addUpdate(
+          `There are no ${title} left to unassign`,
+          previousGameState,
+        );
       }
 
-      if (title === "lumberjacks") {
-        const newLumberjackCount = previousGameState.jobs.lumberjacks + amount;
-        if (newLumberjackCount < 0) return previousGameState;
-        return {
-          ...previousGameState,
-          jobs: { ...previousGameState.jobs, lumberjacks: newLumberjackCount },
-        };
+      const rule = jobRules[title];
+      const error = rule?.canAssign?.(previousGameState, newCount);
+      if (error) {
+        return addUpdate(error, previousGameState);
       }
-      if (title === "soldiers") {
-        return previousGameState;
-      }
-      return previousGameState;
+
+      return {
+        ...previousGameState,
+        jobs: {
+          ...previousGameState.jobs,
+          [title]: newCount,
+        },
+      };
     });
   };
 
@@ -310,14 +322,22 @@ export default function App() {
 
         const assignedFarms = seasonGameState.farms;
 
-        newFood = Math.round(newFood + assignedFarms * (Math.max(seasonGameState.jobs.farmers + 1, 1) * getFarmCropAmount(newSeason)));
+        newFood = Math.round(
+          newFood +
+            assignedFarms *
+              (Math.max(seasonGameState.jobs.farmers + 1, 1) *
+                getFarmCropAmount(newSeason)),
+        );
         let newPopulation;
         const newJobs = seasonGameState.jobs;
 
         if (newFood <= 0 && seasonGameState.people > 0) {
           newFood = 0;
           newPopulation = seasonGameState.people - 1;
-          newUpdates = addUpdate("Someone starved because you ran out of food! Build more farms!", prevGameState)
+          newUpdates = addUpdate(
+            "Someone starved because you ran out of food! Build more farms!",
+            prevGameState,
+          );
           if (seasonGameState.jobs.farmers > 0) {
             newJobs.farmers = newJobs.farmers - 1;
           } else if (seasonGameState.jobs.lumberjacks > 0) {
@@ -339,7 +359,7 @@ export default function App() {
           people: newPopulation,
           food: newFood,
           jobs: newJobs,
-          updates: newUpdates.updates
+          updates: newUpdates.updates,
         };
       });
     }, 2000);
@@ -380,6 +400,9 @@ export default function App() {
           <span>Farmers: {game.jobs.farmers}</span>
           <button onClick={() => assignJobs("farmers", -1)}>-1</button>
           <button onClick={() => assignJobs("farmers", 1)}>+1</button>
+          <span>Soldiers: {game.jobs.soldiers}</span>
+          <button onClick={() => assignJobs("soldiers", -1)}>-1</button>
+          <button onClick={() => assignJobs("soldiers", 1)}>1</button>
           {/*<span>Lumberjacks: {game.jobs.lumberjacks}</span>*/}
           {/*<button onClick={() => assignJobs("lumberjacks", -1)}>-1</button>*/}
           {/*<button onClick={() => assignJobs("lumberjacks", 1)}>+1</button>*/}
