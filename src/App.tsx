@@ -151,6 +151,10 @@ export default function App() {
     },
   });
 
+  const jobs: Jobs = game.jobs;
+
+  const might: number = Math.round(jobs.soldiers * 1.5);
+
   const getTotalJobs = (jobs: Jobs) =>
     jobs.farmers + jobs.lumberjacks + jobs.soldiers + jobs.scholars;
 
@@ -394,6 +398,7 @@ export default function App() {
           Construct Farm (-{game.farmPricing} Wood)
         </button>
       </div>
+      <div>Might: {might}</div>
       <div>
         Assign Jobs:
         <div>
@@ -402,7 +407,7 @@ export default function App() {
           <button onClick={() => assignJobs("farmers", 1)}>+1</button>
           <span>Soldiers: {game.jobs.soldiers}</span>
           <button onClick={() => assignJobs("soldiers", -1)}>-1</button>
-          <button onClick={() => assignJobs("soldiers", 1)}>1</button>
+          <button onClick={() => assignJobs("soldiers", 1)}>+1</button>
           {/*<span>Lumberjacks: {game.jobs.lumberjacks}</span>*/}
           {/*<button onClick={() => assignJobs("lumberjacks", -1)}>-1</button>*/}
           {/*<button onClick={() => assignJobs("lumberjacks", 1)}>+1</button>*/}
