@@ -120,14 +120,12 @@ const getProbability = (season: string) => {
   };
 };
 
-const getFarmCropAmount = (season: string): number => {
-  if (season === "Spring") {
-    return 2;
-  }
-  if (season === "Winter") {
-    return 0.25;
-  }
-  return 1;
+const FARMER_BONUS = 1;
+
+const getFarmYield = (season: string): number => {
+  if (season === "Summer") return 3;
+  if (season === "Winter") return 1;
+  return 2; // Spring and Autumn
 };
 
 export default function App() {
@@ -326,14 +324,10 @@ export default function App() {
           seasonGameState.people,
         );
 
-        const assignedFarms = seasonGameState.farms;
-
-        newFood = Math.round(
+        newFood =
           newFood +
-            assignedFarms *
-              (Math.max(seasonGameState.jobs.farmers + 1, 1) *
-                getFarmCropAmount(newSeason)),
-        );
+          seasonGameState.farms * getFarmYield(newSeason) +
+          seasonGameState.jobs.farmers * FARMER_BONUS;
         let newPopulation;
         const newJobs = seasonGameState.jobs;
 
@@ -358,6 +352,9 @@ export default function App() {
             : seasonGameState.people;
         }
 
+        const newResearchPoints =
+          seasonGameState.researchPoints + seasonGameState.jobs.scholars * 0.5;
+
         return {
           ...seasonGameState,
           days: newSeconds,
@@ -366,6 +363,7 @@ export default function App() {
           food: newFood,
           jobs: newJobs,
           updates: newUpdates.updates,
+          researchPoints: Math.round(newResearchPoints * 10) / 10,
         };
       });
     }, 2000);
@@ -411,6 +409,9 @@ export default function App() {
           <span>Soldiers: {game.jobs.soldiers}</span>
           <button onClick={() => assignJobs("soldiers", -1)}>-1</button>
           <button onClick={() => assignJobs("soldiers", 1)}>+1</button>
+          <span>Scholars: {game.jobs.scholars}</span>
+          <button onClick={() => assignJobs("scholars", -1)}>-1</button>
+          <button onClick={() => assignJobs("scholars", 1)}>+1</button>
           {/*<span>Lumberjacks: {game.jobs.lumberjacks}</span>*/}
           {/*<button onClick={() => assignJobs("lumberjacks", -1)}>-1</button>*/}
           {/*<button onClick={() => assignJobs("lumberjacks", 1)}>+1</button>*/}
