@@ -279,6 +279,29 @@ export default function App() {
     });
   };
 
+  const conductResearch = (
+    mechanicKey: (typeof mechanicsNames)[keyof typeof mechanicsNames],
+    cost: number,
+  ) => {
+    setGame((prevGameState) => {
+      if (prevGameState.unlockedMechanics.includes(mechanicKey)) {
+        return prevGameState;
+      }
+      if (prevGameState.researchPoints < cost) {
+        return addUpdate(
+          `You need ${cost} research points to unlock this upgrade`,
+          prevGameState,
+        );
+      }
+      return {
+        ...prevGameState,
+        researchPoints:
+          Math.round((prevGameState.researchPoints - cost) * 10) / 10,
+        unlockedMechanics: [...prevGameState.unlockedMechanics, mechanicKey],
+      };
+    });
+  };
+
   const constructFarm = () => {
     setGame((prevGameState) => {
       if (prevGameState.wood < prevGameState.farmPricing) {
@@ -391,14 +414,29 @@ export default function App() {
           Construct Farm (-{game.farmPricing} Wood)
         </button>
       </div>
-      <div>Might: {might}</div>
-      <div>Research Points: {game.researchPoints}</div>
-      <div>
-        Assign Jobs:
+      {game.unlockedMechanics.includes(mechanicsNames.farmingUnlocked) && (
         <div>
           <span>Farmers: {game.jobs.farmers}</span>
           <button onClick={() => assignJobs("farmers", -1)}>-1</button>
           <button onClick={() => assignJobs("farmers", 1)}>+1</button>
+        </div>
+      )}
+      <div>
+        <strong>Research</strong>
+        <div>Research Points: {game.researchPoints}</div>
+        {!game.unlockedMechanics.includes(mechanicsNames.farmingUnlocked) && (
+          <button
+            onClick={() => conductResearch(mechanicsNames.farmingUnlocked, 40)}
+          >
+            {/* TODO: Fix wording */}
+            Farming (-40 Research Points)
+          </button>
+        )}
+      </div>
+      <div>Might: {might}</div>
+      <div>
+        Assign Jobs:
+        <div>
           <span>Soldiers: {game.jobs.soldiers}</span>
           <button onClick={() => assignJobs("soldiers", -1)}>-1</button>
           <button onClick={() => assignJobs("soldiers", 1)}>+1</button>
