@@ -113,7 +113,7 @@ const getProbability = (season: string) => {
   };
 };
 
-const FARMER_BONUS = 1;
+const FARMER_BONUS = 5;
 
 const getFarmYield = (season: string): number => {
   if (season === "Summer") return 3;
