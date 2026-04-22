@@ -33,6 +33,7 @@ interface Game {
   season: string;
   unlockedMechanics: string[];
   jobs: Jobs;
+  researchPoints: number;
 }
 
 type JobRule = {
@@ -149,6 +150,7 @@ export default function App() {
       soldiers: 0,
       scholars: 0,
     },
+    researchPoints: 0,
   });
 
   const jobs: Jobs = game.jobs;
@@ -399,6 +401,7 @@ export default function App() {
         </button>
       </div>
       <div>Might: {might}</div>
+      <div>Research Points: {game.researchPoints}</div>
       <div>
         Assign Jobs:
         <div>
