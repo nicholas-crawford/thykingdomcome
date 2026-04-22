@@ -41,14 +41,7 @@ type JobRule = {
 };
 
 const jobRules: Record<keyof Jobs, JobRule> = {
-  farmers: {
-    canAssign: (state, newCount) => {
-      if (state.farms < newCount) {
-        return "You require more farms to add a farmer";
-      }
-      return null;
-    },
-  },
+  farmers: {},
   lumberjacks: {},
   soldiers: {},
   scholars: {},
