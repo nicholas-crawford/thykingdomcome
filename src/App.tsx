@@ -304,7 +304,7 @@ export default function App() {
   };
 
   const populationEatsFood = (currentFood: number, populationCount: number) => {
-    return currentFood + populationCount * -2;
+    return currentFood + populationCount * -4;
   };
 
   useEffect(() => {
