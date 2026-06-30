@@ -91,12 +91,12 @@ const getSeason = (day: number) => {
   }
 };
 
-const getProbability = (season: string) => {
+const getProbability = (season: string): Probabilities => {
   if (season === "Spring") {
     return {
-      1: 0.5,
+      1: 0.2,
       2: 0.45,
-      0: 0.05,
+      3: 0.35,
     };
   }
   if (season === "Winter") {
@@ -439,6 +439,18 @@ export default function App() {
             Farming (-40 Research Points)
           </button>
         )}
+        {!game.unlockedMechanics.includes(
+          mechanicsNames.lumberjackUnlocked,
+        ) && (
+          <button
+            onClick={() =>
+              conductResearch(mechanicsNames.lumberjackUnlocked, 40)
+            }
+          >
+            {/* TODO: Fix wording */}
+            Carpentry (-40 Research Points)
+          </button>
+        )}
       </div>
       <div>Might: {might}</div>
       <div>
@@ -450,9 +462,15 @@ export default function App() {
           <span>Scholars: {game.jobs.scholars}</span>
           <button onClick={() => assignJobs("scholars", -1)}>-1</button>
           <button onClick={() => assignJobs("scholars", 1)}>+1</button>
-          <span>Lumberjacks: {game.jobs.lumberjacks}</span>
-          <button onClick={() => assignJobs("lumberjacks", -1)}>-1</button>
-          <button onClick={() => assignJobs("lumberjacks", 1)}>+1</button>
+          {game.unlockedMechanics.includes(
+            mechanicsNames.lumberjackUnlocked,
+          ) && (
+            <>
+              <span>Lumberjacks: {game.jobs.lumberjacks}</span>
+              <button onClick={() => assignJobs("lumberjacks", -1)}>-1</button>
+              <button onClick={() => assignJobs("lumberjacks", 1)}>+1</button>
+            </>
+          )}
         </div>
       </div>
       <div className="Logs">
