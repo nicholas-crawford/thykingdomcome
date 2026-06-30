@@ -344,6 +344,12 @@ export default function App() {
           newFood +
           seasonGameState.farms * getFarmYield(newSeason) +
           seasonGameState.jobs.farmers * FARMER_BONUS;
+
+        const LUMBERJACK_YIELD = 0.5;
+        const newWood =
+          seasonGameState.wood +
+          seasonGameState.jobs.lumberjacks * LUMBERJACK_YIELD;
+
         let newPopulation;
         const newJobs = seasonGameState.jobs;
 
@@ -378,6 +384,7 @@ export default function App() {
           people: newPopulation,
           food: newFood,
           jobs: newJobs,
+          wood: newWood,
           updates: newUpdates.updates,
           researchPoints: Math.round(newResearchPoints * 10) / 10,
         };
@@ -443,9 +450,9 @@ export default function App() {
           <span>Scholars: {game.jobs.scholars}</span>
           <button onClick={() => assignJobs("scholars", -1)}>-1</button>
           <button onClick={() => assignJobs("scholars", 1)}>+1</button>
-          {/*<span>Lumberjacks: {game.jobs.lumberjacks}</span>*/}
-          {/*<button onClick={() => assignJobs("lumberjacks", -1)}>-1</button>*/}
-          {/*<button onClick={() => assignJobs("lumberjacks", 1)}>+1</button>*/}
+          <span>Lumberjacks: {game.jobs.lumberjacks}</span>
+          <button onClick={() => assignJobs("lumberjacks", -1)}>-1</button>
+          <button onClick={() => assignJobs("lumberjacks", 1)}>+1</button>
         </div>
       </div>
       <div className="Logs">
