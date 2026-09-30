@@ -1,55 +1,34 @@
-# thykingdomcome
+# Thy Kingdom Come
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A browser incremental game set in a medieval kingdom, built with React, TypeScript and Vite.
 
-Currently, two official plugins are available:
+You start by foraging for food. Once you have enough food you can gather wood, and wood builds houses and farms. Houses grow your population, and you assign people to jobs. Scholars earn research points, research unlocks farmers and lumberjacks, and soldiers add to your might. Every 2 seconds is one in-game day, and the season changes how much food foraging and farms produce. Everyone eats, and if food runs out, people starve.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Getting started
 
-## Expanding the ESLint configuration
+You need Node.js 18 or later.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-});
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Open the local URL Vite prints (usually http://localhost:5173). Refreshing the page starts a new game.
 
-```js
-// eslint.config.js
-import reactX from "eslint-plugin-react-x";
-import reactDom from "eslint-plugin-react-dom";
+Other scripts: `npm run build`, `npm run lint`, `npm run preview`.
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    "react-x": reactX,
-    "react-dom": reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs["recommended-typescript"].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-});
-```
+## Solution retrospective
 
+**Status:** Paused while I work on other projects (currently cheap-records-api) and build up my game design knowledge.
+
+### What are you most proud of, and what would you do differently next time?
+
+Rebuilding the state into a single typed `Game` object was the biggest win. I wasn't sure how to manage game logic with React state, and getting that set up defined the structure for everything after it. The job rules (`jobRules` and `canAssign`) made adding new jobs much easier, and the code easier to understand. Next time I'd spend more time on game design and write a structured gameplay plan before building any logic. Not having one is still the main reason for the delays, and it's why so much is hardcoded or commented out. Seeds are the clearest example: they made sense in my head, but in practice they slowed progress in a way that wasn't satisfying to play, so I removed them. I also tried having Claude generate an MVP plan, but handing that much to AI didn't fix the gap in my own game design knowledge, so I scrapped it.
+
+### What challenges did you encounter, and how did you overcome them?
+
+The tick loop was the hardest part, because I hadn't written this kind of logic before. My first version had eight separate `useState` calls, so reading one value inside the interval meant nesting setters (`setPeople` inside `setHouses` inside `setSeconds`). That got messy fast and pushed me to move everything into one `Game` object that the interval updates with `setGame(prev => ...)`. Intervals were also stacking and speeding the game up, until I added the empty dependency array and `clearInterval` cleanup. Job assignment used to need its own error message in each function, so I moved the checks into one `assignJobs` function that logs the error and stops the assignment if it's not allowed.
+
+### What's next?
+
+When I come back to it, I'll write a plan first and build from that. The idea is to use the mechanics that are already there to make a good core loop, then get feedback and build from there.
