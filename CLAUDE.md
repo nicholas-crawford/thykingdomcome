@@ -89,3 +89,17 @@ Teaching me to debug is worth more than fixing the bug. Don’t reach for the fi
 - **Conventions:**
 - **Known trade-offs already made and why:** Everything is in one file mostly for quick prototyping. Once you think it’s big enough, push me to split into components and proper React patterns.
 - **What I’m specifically trying to learn on this project:** Catch any gaps in my React, CSS, and JS — and grow into fullstack JS.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues (`nicholas-crawford/thykingdomcome`), via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five-label vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
