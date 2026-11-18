@@ -2,14 +2,16 @@ import { useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import "./css/styles.css";
 import mechanicsNames from "./consts/mechanicNames";
+import {
+  getFarmYield,
+  getProbability,
+  getSeason,
+  type Probabilities,
+} from "./game/season";
 
 interface Update {
   id: string;
   message: string;
-}
-
-interface Probabilities {
-  [key: string]: number;
 }
 
 interface Jobs {
@@ -78,48 +80,7 @@ const addSeasonUpdate = (
   return addUpdate(message, previousGameState);
 };
 
-const getSeason = (day: number) => {
-  const remainder = day % 360;
-  if (remainder < 90) {
-    return "Spring";
-  } else if (remainder < 180) {
-    return "Summer";
-  } else if (remainder < 270) {
-    return "Autumn";
-  } else {
-    return "Winter";
-  }
-};
-
-const getProbability = (season: string): Probabilities => {
-  if (season === "Spring") {
-    return {
-      1: 0.2,
-      2: 0.45,
-      3: 0.35,
-    };
-  }
-  if (season === "Winter") {
-    return {
-      1: 0.09,
-      2: 0.01,
-      0: 0.9,
-    };
-  }
-  return {
-    1: 0.4,
-    2: 0.1,
-    0: 0.5,
-  };
-};
-
 const FARMER_BONUS = 5;
-
-const getFarmYield = (season: string): number => {
-  if (season === "Summer") return 3;
-  if (season === "Winter") return 1;
-  return 2; // Spring and Autumn
-};
 
 export default function App() {
   const [game, setGame] = useState<Game>({
